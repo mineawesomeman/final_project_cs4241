@@ -1,0 +1,11 @@
+{
+  "name": "final-project",
+  "version": "0.0.1",
+  "description": "out final project yippee",
+  "author": "",
+  "scripts": {
+    "start": "nodejs server.js"
+  },
+  "dependencies": {
+  }
+}
