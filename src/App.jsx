@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react"
+import {Map, ZoomControl, GeoJsonLoader} from "pigeon-maps"
+import {maptiler} from 'pigeon-maps/providers'
 
-function App() {
-  const [count, setCount] = useState(0)
+const map_tiler_api_key = 'GcgeMxfDe9G83TPjIASJ',
+      maptilerProvider = maptiler(map_tiler_api_key, 'basic')
 
-  return (
-    <>
+const geoJsonLink = '/buildings.geojson'
+
+class App extends React.Component {
+
+  featureClick(info) {
+    console.log(info.payload.properties.name)
+  }
+
+  render() {
+    return (
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <h1>GoatChats</h1>
+        <Map  
+          height={500} 
+          center={[42.27431,-71.80839]} 
+          defaultZoom={17}
+          minZoom={16}
+          maxZoom={18}
+          provider={maptilerProvider}>
+          <GeoJsonLoader
+            link={geoJsonLink}
+            styleCallback={(feature, hover) =>
+              hover
+                ? { fill: '#d0312d99', strokeWidth: '2'}
+                : { fill: '#4e070799', strokeWidth: '1'}
+            }
+            onClick={this.featureClick}
+          />
+        </Map>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    )
+  }
 }
 
-export default App
+export default App;
