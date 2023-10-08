@@ -41,7 +41,6 @@ app.get('/auth/github/callback', async (req, res) => {
 
   // Store user data in local storage
   const user = {
-    user_id: users.length + 1, // Simple incrementing ID for now
     github_oauth_id: githubUserData.id,
     username: githubUserData.login,
     display_name: githubUserData.name || githubUserData.login,
