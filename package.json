@@ -8,14 +8,12 @@
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "start": "node http_server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "socket.io": "^4.7.2",
-    "socket.io-client": "^4.7.2",
     "vite-express": "^0.10.0"
   },
   "devDependencies": {
