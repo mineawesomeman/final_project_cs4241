@@ -14,7 +14,6 @@ const io = new Server(httpServer, {
   }
 });
 
-
 app.use(express.static('dist'));
 
 
@@ -32,10 +31,24 @@ io.on('connection', (socket) => {
     console.log(`${room} (${timestamp}): ${message}`);
 
     // Store the message details
+    /*
+      Messages
+        message_id: Primary Key, Auto-incremented
+        building_id: Foreign Key referencing Buildings
+        user_id: Foreign Key referencing Users
+        message_content: Text content of the message
+        timestamp: Date and time when the message was sent
+        is_edited: Boolean, indicating if the message was edited 
+    */
+    const messageID = (messagesLog.length === 0) ? 0 : messagesLog[messagesLog.length - 1] + 1;
+    const is_edited = false;
     const newMessage = {
-      message,
+      messageID,
       room,
-      timestamp
+      userid,
+      message,
+      timestamp,
+      is_edited
     };
     messagesLog.push(newMessage);
 
