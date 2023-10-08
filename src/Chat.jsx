@@ -7,6 +7,14 @@ function Chat({ room }) {
     const socketRef = useRef(null);
     const [prevRoom, setPrevRoom] = useState(null);
     const [connected, setConnected] = useState(false);
+    const activeRoomRef = useRef(room);
+
+    useEffect(() => {
+
+        // ... (rest of the code remains the same)
+
+    }, [room]);
+
 
     useEffect(() => {
         console.log("useEffect");
@@ -14,6 +22,8 @@ function Chat({ room }) {
         if (room) {
             setPrevRoom(room);
         }
+        activeRoomRef.current = room; // Update ref to current room
+
         if (!connected) {
             socketRef.current = io.connect('http://localhost:3001');
             setConnected(true);
@@ -22,21 +32,23 @@ function Chat({ room }) {
         if (prevRoom != null) {
             socketRef.current.emit('leave-room', prevRoom);
         }
-        socketRef.current.emit('join-room', room);
 
+        socketRef.current.emit('join-room', room);
         socketRef.current.emit('request-historical-messages', room);
+
         socketRef.current.on('historical-messages', (historicalMessages) => {
-            console.log("historical-message");
-            console.log(messages);
-            console.log(historicalMessages);
-            setMessages(historicalMessages);
+            // Check if the room associated with the messages matches the currently active room
+            if (historicalMessages.length > 0 && historicalMessages[0].room === activeRoomRef.current) {
+                console.log("historical-message");
+                setMessages(historicalMessages);
+            }
         });
 
         socketRef.current.on('receive-message', (message) => {
             console.log("Received message:", message);
             setMessages((prev) => [...prev, message]);
-         });
-         
+        });
+
 
         return () => {
             socketRef.current.off('historical-messages');
@@ -57,15 +69,13 @@ function Chat({ room }) {
     const sendMessage = () => {
         console.log(room + ' : ' + input);
         socketRef.current.emit('send-message', { room, message: input });
-        
+
         // Use setMessages to update the state
         const newMessage = {
             message: input,
             room,
             timestamp: new Date().toISOString()
-          };
-          setMessages((prev) => [...prev, newMessage]);          
-        
+        };
         setInput('');
         console.log('Sent Message : ' + newMessage);
     };
@@ -75,9 +85,11 @@ function Chat({ room }) {
             <h2>{room}</h2>
             <div>
                 {messages.map((messageObj, index) => (
-                    <div key={index}>
-                        <p>{messageObj.room} ({messageObj.timestamp}): {messageObj.message}</p>
-                    </div>
+                    messageObj.message ? (
+                        <div key={index}>
+                            <p>{messageObj.room} ({messageObj.timestamp}): {messageObj.message}</p>
+                        </div>
+                    ) : null
                 ))}
             </div>
             <input
