@@ -128,7 +128,6 @@ function Chat({ room }) {
 
     return (
         <div>
-            <h2>{room}</h2>
             <div>
                 {messages.map((messageObj, index) => (
                     messageObj.message ? (

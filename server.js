@@ -2,6 +2,7 @@ import express from  'express'
 import ViteExpress from 'vite-express'
 import axios from 'axios'
 const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+console.log(clientSecret)
 
 const app = express();
 

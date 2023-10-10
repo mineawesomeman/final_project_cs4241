@@ -212,12 +212,19 @@ CREATE TABLE users (
   console.log('Redirected user back to app.');
 });
 
+app.get('/logout', (req, res) => {
+  res.cookie('userData', "")
+  res.redirect('/')
+  console.log('logging user out')
+})
+
 app.get('/get-username', (req, res) => {
   const { userid } = req.query;
   console.log("Finding username of user with id " + userid);
 
   // Find the user in the users array
   const user = users.find(u => u.github_oauth_id === parseInt(userid));
+  console.log(users)
   console.log("username " + user.username);
 
   if (user) {
