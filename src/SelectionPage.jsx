@@ -2,6 +2,7 @@ import React from "react"
 import {Map, ZoomControl, GeoJsonLoader} from "pigeon-maps"
 import {maptiler} from 'pigeon-maps/providers'
 import './App.css'
+import Chat from './Chat'
 
 const map_tiler_api_key = 'GcgeMxfDe9G83TPjIASJ',
       maptilerProvider = maptiler(map_tiler_api_key, 'basic')
@@ -13,13 +14,15 @@ class SelectionPage extends React.Component {
   constructor(props) {
     super(props)
 
-    this.state = {chat: null}
+    this.state = {chat: "Kaven Hall"}
 
-    this.featureClick = this.featureClick.bind()
+    this.featureClick = this.featureClick.bind(this)
   }
 
 
   featureClick(info) {
+    this.setState({chat: info.payload.properties.name})
+
     document.querySelector("#chat_name").innerHTML = info.payload.properties.name;
     document.querySelector("#chat").style.display = "grid";
     document.querySelector("#chat").showModal();
@@ -63,8 +66,8 @@ class SelectionPage extends React.Component {
         <dialog id="chat" className="chat" style={{"display": "none"}}>
           <h2 id="chat_name" className="chat_name"></h2>
           <button className="close_button" onClick={this.closeChat} style={{"margin": "5px"}}>Close</button> 
-          <div className="chat_elem" style={{"background-color": "red", "height": "200px"}}>
-            {/* <-- chat element --> */}
+          <div className="chat_elem">
+            <Chat room={this.state.chat} />
           </div>
         </dialog>
       </div>
