@@ -1,11 +1,10 @@
 import React from 'react';
 
 function LoginComponent() {
-  const handleGitHubLogin = () => {
+  const handleGitHubLogin = async () => {
     const clientID = 'ee68f2a2eb45c1602179';
     const redirectURI = 'http://localhost:3000/auth/github/callback'; // change when we move to DO
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientID}&redirect_uri=${redirectURI}`;
-
   };
 
   return (

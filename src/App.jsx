@@ -1,28 +1,20 @@
-import { useState } from 'react';
-import Chat from './Chat';
-import './App.css'
+import './App.css';
 import LoginComponent from './LoginComponent';
-
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Room from './Room';
 
 function App() {
-  const [count, setCount] = useState(0);
-  const [selectedRoom, setSelectedRoom] = useState(null);
 
-return (
-    <>
-      <LoginComponent />
-      <div className="card">
-        <p>Select a chatroom:</p>
-        <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)}>
-          <option value="">-- Select a room --</option>
-          <option value="Room1">Room1</option>
-          <option value="Room2">Room2</option>
-          {/* Add more rooms as needed */}
-        </select>
-        {selectedRoom && <Chat room={selectedRoom} />}
-      </div>
-    </>
-  );
+    return (
+        <>
+    <Router>
+      <Routes>
+        <Route path="/" element={<LoginComponent />} />
+        <Route path="/main" element={<Room />} />
+      </Routes>
+    </Router>
+        </>
+    );
 }
 
 export default App;
