@@ -9,7 +9,7 @@ const map_tiler_api_key = 'GcgeMxfDe9G83TPjIASJ',
 const geoJsonLink = '/buildings.geojson'
 const otherGeoJsonLink = '/townhouses.geojson'
 
-class App extends React.Component {
+class SelectionPage extends React.Component {
   constructor(props) {
     super(props)
 
@@ -72,4 +72,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default SelectionPage;
