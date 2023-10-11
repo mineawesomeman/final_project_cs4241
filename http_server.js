@@ -11,6 +11,18 @@ const socketToUserData = new Map();
 let messagesLog = [];
 const users = [];
 
+import pkg from 'pg';
+const { Pool } = pkg;
+
+
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'postgres',
+  password: 'ABMARTIN',
+  port: 5432
+});
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -129,8 +141,7 @@ app.get('/auth/github/callback', async (req, res) => {
   const githubUserData = userResponse.data;
   console.log('Received user data from GitHub:', githubUserData);
 
-  /*
-Will stay in callback
+
 const user = {
     github_oauth_id: githubUserData.id,
     username: githubUserData.login,
@@ -145,37 +156,22 @@ const user = {
     console.error('Error saving user to database:', err);
   }
 
-  */
-
-  // Store user data in local storage- will be deleted
-  const user = {
-    github_oauth_id: githubUserData.id,
-    username: githubUserData.login,
-    display_name: githubUserData.name || githubUserData.login,
-    joined_date: new Date().toISOString()
-  };
-  users.push(user);
-  console.log('Stored user in local storage:', user);
-
-  //end of deleted portion
-
-  /*
-  Digital Ocean replacement-connection template for postgresql
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: 'your_db_username',
-  host: 'your_db_host',
-  database: 'your_db_name',
-  password: 'your_db_password',
-  port: your_db_port
-});
 
 
-  */
+  // // Store user data in local storage- will be deleted
+  // const user = {
+  //   github_oauth_id: githubUserData.id,
+  //   username: githubUserData.login,
+  //   display_name: githubUserData.name || githubUserData.login,
+  //   joined_date: new Date().toISOString()
+  // };
+  // users.push(user);
+  // console.log('Stored user in local storage:', user);
+  //
+  // //end of deleted portion
 
-  /*
-  Adding new user data to db after oauth
+
+
 async function addUserToDatabase(user) {
   try {
     const query = `
@@ -194,7 +190,7 @@ async function addUserToDatabase(user) {
   }
 }
 
-  */
+
 
   /*
 SQL CODE for creating table:
