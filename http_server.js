@@ -23,6 +23,35 @@ const pool = new Pool({
   port: 5432
 });
 
+async function addUserToDatabase(user) {
+  try {
+    // Check if the user already exists in the database based on their GitHub OAuth ID
+    const checkQuery = 'SELECT * FROM users WHERE github_oauth_id = $1;';
+    const checkResult = await pool.query(checkQuery, [user.github_oauth_id]);
+
+    if (checkResult.rows.length > 0) {
+      // User already exists; return the existing user
+      return checkResult.rows[0];
+    }
+
+    // User doesn't exist; insert them into the database
+    const insertQuery = `
+      INSERT INTO users(github_oauth_id, username, display_name, joined_date)
+      VALUES($1, $2, $3, $4)
+      RETURNING *;
+    `;
+
+    const insertValues = [user.github_oauth_id, user.username, user.display_name, user.joined_date];
+
+    const result = await pool.query(insertQuery, insertValues);
+    return result.rows[0]; // Returns the inserted user
+  } catch (err) {
+    console.error('Error inserting user into database:', err);
+    throw err;
+  }
+}
+
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -50,6 +79,9 @@ io.on('connection', (socket) => {
   socket.on('join-room', (room) => {
     socket.join(room);
   });
+
+
+
 
   // Handle sending a message
   socket.on('send-message', ({ room, message }) => {
@@ -141,71 +173,27 @@ app.get('/auth/github/callback', async (req, res) => {
   const githubUserData = userResponse.data;
   console.log('Received user data from GitHub:', githubUserData);
 
-
-const user = {
+  const user = {
     github_oauth_id: githubUserData.id,
     username: githubUserData.login,
     display_name: githubUserData.name || githubUserData.login,
-    joined_date: new Date().toISOString()
+    joined_date: new Date().toISOString(),
   };
 
   try {
     const savedUser = await addUserToDatabase(user);
     console.log('User saved to database:', savedUser);
+
+    // Set the user data in a cookie
+    res.cookie('userData', JSON.stringify(savedUser));
+    // Redirect user back to app
+    res.redirect('/main'); // This is the only place where you should send a response
+    console.log('Redirected user back to app.');
   } catch (err) {
     console.error('Error saving user to database:', err);
+    // Handle the error and send an appropriate response
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-
-
-  // // Store user data in local storage- will be deleted
-  // const user = {
-  //   github_oauth_id: githubUserData.id,
-  //   username: githubUserData.login,
-  //   display_name: githubUserData.name || githubUserData.login,
-  //   joined_date: new Date().toISOString()
-  // };
-  // users.push(user);
-  // console.log('Stored user in local storage:', user);
-  //
-  // //end of deleted portion
-
-
-
-async function addUserToDatabase(user) {
-  try {
-    const query = `
-      INSERT INTO users(github_oauth_id, username, display_name, joined_date)
-      VALUES($1, $2, $3, $4)
-      RETURNING *;
-    `;
-
-    const values = [user.github_oauth_id, user.username, user.display_name, user.joined_date];
-
-    const result = await pool.query(query, values);
-    return result.rows[0]; // Returns the inserted user
-  } catch (err) {
-    console.error('Error inserting user into database:', err);
-    throw err;
-  }
-}
-
-
-
-  /*
-SQL CODE for creating table:
-CREATE TABLE users (
-  github_oauth_id BIGINT UNIQUE NOT NULL PRIMARY KEY,
-  username VARCHAR(255) NOT NULL,
-  display_name VARCHAR(255),
-  joined_date TIMESTAMP NOT NULL
-);
-
-  */
-  // Return the user data in the HTTP response
-  res.cookie('userData', JSON.stringify(user));
-  res.redirect('/main'); // Redirect user back to app
-  console.log('Redirected user back to app.');
 });
 
 app.get('/logout', (req, res) => {
@@ -214,21 +202,36 @@ app.get('/logout', (req, res) => {
   console.log('logging user out')
 })
 
-app.get('/get-username', (req, res) => {
+app.get('/get-username', async (req, res) => {
   const { userid } = req.query;
   console.log("Finding username of user with id " + userid);
 
-  // Find the user in the users array
-  const user = users.find(u => u.github_oauth_id === parseInt(userid));
-  console.log(users)
-  console.log("username " + user.username);
+  try {
+    const user = await getUserFromDatabase(userid);
+    console.log("username " + user.username);
 
-  if (user) {
-    res.json({ username: user.username });
-  } else {
-    res.status(404).json({ error: "User not found" });
+    if (user) {
+      res.json({ username: user.username });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (err) {
+    console.error('Error retrieving user from database:', err);
+    // Handle the error and send an appropriate response
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+async function getUserFromDatabase(userid) {
+  try {
+    const query = 'SELECT * FROM users WHERE github_oauth_id = $1;';
+    const result = await pool.query(query, [parseInt(userid)]);
+    return result.rows[0];
+  } catch (err) {
+    console.error('Error retrieving user from database:', err);
+    throw err;
+  }
+}
 
 
 app.use(express.json());
