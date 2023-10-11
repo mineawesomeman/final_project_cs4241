@@ -19,6 +19,12 @@ class SelectionPage extends React.Component {
     this.featureClick = this.featureClick.bind(this)
   }
 
+    // Function to handle the logout button click
+    handleLogoutClick = () => {
+        // Redirect to the server's logout route
+        window.location.href = '/logout';
+    };
+
 
   featureClick(info) {
     this.setState({chat: info.payload.properties.name})
@@ -70,6 +76,7 @@ class SelectionPage extends React.Component {
             <Chat room={this.state.chat} />
           </div>
         </dialog>
+          <button onClick={this.handleLogoutClick}>Logout</button> {/* Add the logout button */}
       </div>
     )
   }
