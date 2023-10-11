@@ -7,9 +7,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 const socketToUserData = new Map();
+let globalGithubOAuthID = null;
 
-let messagesLog = [];
-const users = [];
 
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -51,6 +50,64 @@ async function addUserToDatabase(user) {
   }
 }
 
+async function getHistoricalMessagesFromDatabase(room) {
+  try {
+    const query = `
+      SELECT * FROM messages
+      WHERE room = $1
+      ORDER BY timestamp;
+    `;
+    const result = await pool.query(query, [room]);
+
+    // Return the result as JSON
+    return result.rows;
+  } catch (err) {
+    console.error('Error retrieving historical messages from database:', err);
+    throw err;
+  }
+}
+
+async function insertMessageIntoDatabase(user, room, message, timestamp, socket) {
+  try {
+    const userData = socketToUserData.get(socket.id);
+    if (!userData || !userData.user_id) {
+      console.error('User not found for socket:', socket.id);
+      return null; // Return null or handle the case when the user is not found
+    }
+
+    const user_id = userData.user_id; // Retrieve the user_id from the user object
+
+    const query = `
+      INSERT INTO messages(user_id, room, message_content, timestamp, is_edited)
+      VALUES($1, $2, $3, $4, $5)
+      RETURNING message_id;
+    `;
+
+    const values = [user_id, room, message, timestamp, false];
+
+    const result = await pool.query(query, values);
+    return result.rows[0].message_id;
+  } catch (err) {
+    console.error('Error inserting message into database:', err);
+    throw err;
+  }
+}
+
+
+
+// Function to retrieve a message from the database
+async function getMessageFromDatabase(messageID) {
+  try {
+    const query = 'SELECT * FROM messages WHERE message_id = $1;';
+    const result = await pool.query(query, [messageID]);
+    return result.rows[0];
+  } catch (err) {
+    console.error('Error retrieving message from database:', err);
+    throw err;
+  }
+}
+
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -68,23 +125,22 @@ io.on('connection', (socket) => {
   socket.on('set-user', (userid, callback) => {
     console.log("User ID received:", userid);
     if (userid != null) {
-    socketToUserData.set(socket.id, userid);
-    callback('User ID received successfully.');
+      socketToUserData.set(socket.id, { user_id: userid }); // Store user_id as an object
+      callback('User ID received successfully.');
     } else {
       callback('error');
     }
   });
 
-  // Handle joining a chatroom
+
   socket.on('join-room', (room) => {
     socket.join(room);
+    socket.emit('request-historical-messages', room);
   });
 
 
-
-
-  // Handle sending a message
-  socket.on('send-message', ({ room, message }) => {
+// Handle sending a message
+  socket.on('send-message', async ({ room, message }) => {
     const user = socketToUserData.get(socket.id);
     if (!user) {
       console.error('User not found for socket:', socket.id);
@@ -93,39 +149,34 @@ io.on('connection', (socket) => {
     const timestamp = new Date().toISOString();
     console.log(`${room} (${timestamp}): ${message}`);
 
-    // Store the message details
-    /*
-      Messages
-        message_id: Primary Key, Auto-incremented
-        building_id: Foreign Key referencing Buildings
-        user_id: Foreign Key referencing Users
-        message_content: Text content of the message
-        timestamp: Date and time when the message was sent
-        is_edited: Boolean, indicating if the message was edited 
-    */
-    const messageID = (messagesLog.length === 0) ? 0 : messagesLog[messagesLog.length - 1] + 1;
-    const is_edited = false;
-    const newMessage = {
-      messageID,
-      room,
-      user,
-      message,
-      timestamp,
-      is_edited
-    };
-    messagesLog.push(newMessage);
+    // Pass the 'socket' object as a parameter to 'insertMessageIntoDatabase'
+    try {
+      const messageID = await insertMessageIntoDatabase(user, room, message, timestamp, socket);
 
-    // Emit the new message to everyone in the room
-    io.to(room).emit('receive-message', newMessage);
+      // Retrieve the newly inserted message from the database
+      const newMessage = await getMessageFromDatabase(messageID);
+
+      // Emit the new message to everyone in the room
+      io.to(room).emit('receive-message', newMessage);
+    } catch (err) {
+      console.error('Error sending message:', err);
+      // Handle the error and send an appropriate response
+      // You may want to emit an error event to the client here
+    }
   });
 
   // Handle the request for historical messages
-  socket.on('request-historical-messages', (room) => {
+  socket.on('request-historical-messages', async (room) => {
     console.log("request-historical-messages");
-    const roomMessages = messagesLog.filter(msg => msg.room === room);
-    socket.emit('historical-messages', roomMessages);
+    try {
+      const roomMessages = await getHistoricalMessagesFromDatabase(room);
+      socket.emit('historical-messages', roomMessages);
+    } catch (err) {
+      console.error('Error handling request for historical messages:', err);
+      // Handle the error and send an appropriate response
+      // You may want to emit an error event to the client here
+    }
   });
-
 
 
   socket.on('leave-room', (room) => {
@@ -180,6 +231,9 @@ app.get('/auth/github/callback', async (req, res) => {
     joined_date: new Date().toISOString(),
   };
 
+  // Set the global variable to store the GitHub OAuth ID
+  globalGithubOAuthID = githubUserData.id;
+
   try {
     const savedUser = await addUserToDatabase(user);
     console.log('User saved to database:', savedUser);
@@ -196,6 +250,18 @@ app.get('/auth/github/callback', async (req, res) => {
   }
 });
 
+app.get('/get-historical-messages', async (req, res) => {
+  const { room } = req.query;
+  try {
+    const roomMessages = await getHistoricalMessagesFromDatabase(room);
+    res.json(roomMessages);
+  } catch (err) {
+    console.error('Error handling request for historical messages:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 app.get('/logout', (req, res) => {
   res.cookie('userData', "")
   res.redirect('/')
@@ -203,10 +269,12 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/get-username', async (req, res) => {
-  const { userid } = req.query;
-  console.log("Finding username of user with id " + userid);
+  let { userid } = globalGithubOAuthID;
+
+  console.log("Finding username of user with id " + globalGithubOAuthID);
 
   try {
+    userid=globalGithubOAuthID;
     const user = await getUserFromDatabase(userid);
     console.log("username " + user.username);
 
@@ -221,6 +289,7 @@ app.get('/get-username', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 async function getUserFromDatabase(userid) {
   try {
