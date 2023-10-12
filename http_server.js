@@ -59,13 +59,19 @@ async function getHistoricalMessagesFromDatabase(room) {
     `;
     const result = await pool.query(query, [room]);
 
+    const historicalMessages = result.rows;
+
+    // Log the historicalMessages
+   // console.log('Historical Messages:', historicalMessages);
+
     // Return the result as JSON
-    return result.rows;
+    return historicalMessages;
   } catch (err) {
     console.error('Error retrieving historical messages from database:', err);
     throw err;
   }
 }
+
 
 async function insertMessageIntoDatabase(user, room, message, timestamp, socket) {
   try {
@@ -170,6 +176,10 @@ io.on('connection', (socket) => {
     console.log("request-historical-messages");
     try {
       const roomMessages = await getHistoricalMessagesFromDatabase(room);
+
+      // Log the roomMessages
+      //console.log('Historical Messages:', roomMessages);
+
       socket.emit('historical-messages', roomMessages);
     } catch (err) {
       console.error('Error handling request for historical messages:', err);
@@ -177,6 +187,7 @@ io.on('connection', (socket) => {
       // You may want to emit an error event to the client here
     }
   });
+
 
 
   socket.on('leave-room', (room) => {
