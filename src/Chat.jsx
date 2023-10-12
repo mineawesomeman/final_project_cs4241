@@ -28,9 +28,11 @@ function Chat({ room }) {
             for (const user of uniqueUserIds) {
                 if (!usernames[user]) {
                     try {
-                        const response = await fetch(`/get-username?userid=${user}`);
-                        const data = await response.json();
-                        setUsernames(prev => ({ ...prev, [user]: data.username }));
+                        if (user) { // Check if user is defined
+                            const response = await fetch(`/get-username?userid=${user}`);
+                            const data = await response.json();
+                            setUsernames(prev => ({ ...prev, [user]: data.username }));
+                        }
                     } catch (error) {
                         console.error('Error fetching username:', error);
                     }
@@ -43,28 +45,54 @@ function Chat({ room }) {
 
     const loadHistoricalMessages = async () => {
         try {
+            console.log(`front end loading historical messages for room: ${room}`);
             const response = await fetch(`/get-historical-messages?room=${room}`);
             if (!response.ok) {
                 console.error('Server returned an error:', response.statusText);
-                return;
+                setMessages([]); // Reset to an empty array on error
+                return [];
             }
             const historicalMessages = await response.json();
+            console.log('Historical messages loaded:', historicalMessages);
 
-            // Assuming you have a state variable 'messages'
-            setMessages(historicalMessages);
+            if (Array.isArray(historicalMessages) && historicalMessages.length > 0) {
+                setMessages(historicalMessages);
+                return historicalMessages;
+            } else {
+                console.warn('No historical messages found for the room.');
+                setMessages([]);
+                return [];
+            }
         } catch (error) {
             console.error('Error fetching historical messages:', error);
+            setMessages([]); // Reset to an empty array on error
+            return [];
         }
     };
 
-
-
     useEffect(() => {
-        if (connected) {
-            socketRef.current.emit('join-room', room);
-            loadHistoricalMessages(); // Load historical messages when connected
+        if (!connected) {
+            socketRef.current = io.connect('http://localhost:3001');
+            setConnected(true);
         }
+
+        (async () => {
+            if (connected) {
+                // Join the room
+                socketRef.current.emit('join-room', room);
+
+                // Load historical messages for the current room
+                const historicalMessages = await loadHistoricalMessages();
+
+                // Append historical messages to the state
+                setMessages(prevMessages => [...prevMessages, ...historicalMessages]);
+
+                // Log all messages to the console after they have been loaded
+                console.log('All messages:', messages);
+            }
+        })();
     }, [connected, room]);
+
 
     useEffect(() => {
         const userDataFromCookie = Cookies.get('userData');
@@ -73,32 +101,43 @@ function Chat({ room }) {
             const userData = JSON.parse(userDataFromCookie);
             setUserData(userData);
 
-            if (room !== activeRoomRef.current) {
-                setMessages([]);
-                socketRef.current.emit('leave-room', activeRoomRef.current);
-                socketRef.current.emit('join-room', room);
-                loadHistoricalMessages(); // Load historical messages when room changes
-                activeRoomRef.current = room;
-            }
+            const fetchData = async () => {
+                // Replace this logic with what you want to do when the room changes
+                if (room !== activeRoomRef.current) {
+                    setMessages([]);
+                    socketRef.current.emit('leave-room', activeRoomRef.current);
+                    socketRef.current.emit('join-room', room);
+                    // Call loadHistoricalMessages when room changes
+                    loadHistoricalMessages();
+                    activeRoomRef.current = room;
+                }
 
-            if (!socketRef.current || !connected) {
-                socketRef.current = io.connect('http://localhost:3001');
-                setConnected(true);
-            }
+                if (!socketRef.current || !connected) {
+                    socketRef.current = io.connect('http://localhost:3001');
+                    setConnected(true);
+                }
 
-            socketRef.current.emit('set-user', userData.github_oauth_id, (acknowledgmentMessage) => {
-                setStatus(acknowledgmentMessage === 'User ID received successfully' ? 'acknowledged' : 'error');
-            });
+                socketRef.current.emit('set-user', userData.github_oauth_id, (acknowledgmentMessage) => {
+                    setStatus(acknowledgmentMessage === 'User ID received successfully' ? 'acknowledged' : 'error');
+                });
 
-            socketRef.current.on('receive-message', (message) => {
-                setMessages(prevMessages => [...prevMessages, message]);
-            });
+                socketRef.current.on('receive-message', (message) => {
+                    // Add the received message to the list of messages.
+                    setMessages(prevMessages => {
+                        const updatedMessages = [...prevMessages, message];
+                        console.log('All messages:', updatedMessages); // Log all messages to the console
+                        return updatedMessages;
+                    });
+                });
 
-            return () => {
-                socketRef.current.off('receive-message');
             };
+
+            fetchData();
         }
+        loadHistoricalMessages();
     }, [room]);
+
+
 
     const sendMessage = () => {
         const newMessage = {
@@ -108,11 +147,13 @@ function Chat({ room }) {
             timestamp: new Date().toISOString(),
         };
 
+        // Clear the input
         setInput('');
 
+        // Emit the new message
         socketRef.current.emit('send-message', { room, message: input });
 
-        // Add the new message to the state to display it immediately
+        // Add the new message to the state, thus it gets rendered immediately
         setMessages(prevMessages => [...prevMessages, newMessage]);
     };
 
@@ -155,3 +196,4 @@ function Chat({ room }) {
 }
 
 export default Chat;
+
