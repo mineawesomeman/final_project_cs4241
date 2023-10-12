@@ -1,4 +1,4 @@
-Project README for Second Pull Request
+GoatChats README 
 Project Description
 
 This project is a real-time chat application that allows users to join different chat rooms and engage in conversations. The application is built using React for the frontend and Node.js for the backend, providing a seamless and interactive user experience. You can access the project here.
