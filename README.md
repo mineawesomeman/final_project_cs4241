@@ -27,11 +27,3 @@ Group Members' Responsibilities
 Project Video
 
 You can view a demo of the project here.
-Our application specific features
-
-
-    Real-Time Messaging: Implementing real-time messaging with historical message fetching was a complex task that required a deep understanding of web sockets and state management in React.
-
-    Technologies Used: The combination of React for the frontend and Node.js for the backend allowed us to build a robust and scalable application. The use of GitHub OAuth for authentication adds an extra layer of security.
-
-    Challenges Overcome: The challenges we faced, particularly in implementing real-time messaging and managing state, required innovative solutions and a deep understanding of the technologies used.
