@@ -70,28 +70,29 @@ function Chat({ room }) {
         }
     };
 
-    useEffect(() => {
-        if (!connected) {
-            socketRef.current = io.connect('http://localhost:3001');
-            setConnected(true);
-        }
+    //useEffect(() => {
+    //    if (!connected) {
+    //        socketRef.current = io.connect('http://localhost:3001');
+    //        setConnected(true);
+    //    }
 
-        (async () => {
-            if (connected) {
-                // Join the room
-                socketRef.current.emit('join-room', room);
+    //    (async () => {
+    //        if (connected) {
+    //            // Join the room
+    //            socketRef.current.emit('join-room', room);
 
-                // Load historical messages for the current room
-                const historicalMessages = await loadHistoricalMessages();
-
-                // Append historical messages to the state
-                setMessages(prevMessages => [...prevMessages, ...historicalMessages]);
-
-                // Log all messages to the console after they have been loaded
-                console.log('All messages:', messages);
-            }
-        })();
-    }, [connected, room]);
+    // Load historical messages for the current room
+    //               const historicalMessages = await loadHistoricalMessages();
+    //             console.log('hist messages:', historicalMessages);
+    //
+    //              // Append historical messages to the state
+    //            setMessages(prevMessages => [...prevMessages, ...historicalMessages]);
+    //
+    //               // Log all messages to the console after they have been loaded
+    //              console.log('All messages:', messages);
+    //      }
+    //    })();
+    //}, [connected, room]);
 
 
     useEffect(() => {
@@ -122,13 +123,17 @@ function Chat({ room }) {
                 });
 
                 socketRef.current.on('receive-message', (message) => {
-                    // Add the received message to the list of messages.
                     setMessages(prevMessages => {
+                        // Check if message with the same ID already exists
+                        if (prevMessages.some(msg => msg.message_id === message.message_id)) {
+                            return prevMessages;
+                        }
                         const updatedMessages = [...prevMessages, message];
-                        console.log('All messages:', updatedMessages); // Log all messages to the console
+                        console.log('recieved new All messages:', updatedMessages); // Log all messages to the console
                         return updatedMessages;
                     });
                 });
+
 
             };
 
@@ -154,7 +159,7 @@ function Chat({ room }) {
         socketRef.current.emit('send-message', { room, message: input });
 
         // Add the new message to the state, thus it gets rendered immediately
-        setMessages(prevMessages => [...prevMessages, newMessage]);
+        //setMessages(prevMessages => [...prevMessages, newMessage]);
     };
 
     function humanReadableTimestamp(timestamp) {
@@ -175,16 +180,29 @@ function Chat({ room }) {
     return (
         <div>
             <div>
-                {messages.map((messageObj, index) => (
-                    messageObj.message ? (
-                        <div key={index}>
-                            <p>
-                                {usernames[messageObj.user] || 'Fetching...'} ({humanReadableTimestamp(messageObj.timestamp)}): {messageObj.message}
-                            </p>
-                        </div>
-                    ) : null
-                ))}
+                {(() => {
+                    //console.log("printing : ", messages);
+
+                    return messages.map((messageObj, index) => {
+                        try {
+                            if (messageObj.message_content) {
+                                return (
+                                    <div key={index}>
+                                        <p>
+                                            {usernames[messageObj.user_id] || 'Fetching...'} ({humanReadableTimestamp(messageObj.timestamp)}): {messageObj.message_content}
+                                        </p>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        } catch (error) {
+                            console.error(`Error rendering message at index ${index}:`, error);
+                            return <p key={index}>Error rendering message at index {index}</p>;
+                        }
+                    });
+                })()}
             </div>
+
             <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
