@@ -1,7 +1,7 @@
 .chat {
   width: 50%;
   gap: 10px 10px;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto 200px;
 }
 
 .chat_name {
@@ -16,4 +16,12 @@
 
 .chat_elem {
   grid-column: 1 / span 2;
+}
+
+.hover_elem {
+  display: none;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  background-color: aliceblue;
 }
