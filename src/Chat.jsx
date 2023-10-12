@@ -22,7 +22,7 @@ function Chat({ room }) {
     }, []);
 
     useEffect(() => {
-        const uniqueUserIds = [...new Set(messages.map(msg => msg.user))];
+        const uniqueUserIds = [...new Set(messages.map(msg => msg.user_id))];
 
         const fetchUsernames = async () => {
             for (const user of uniqueUserIds) {
