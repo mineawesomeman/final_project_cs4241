@@ -13,12 +13,13 @@ let globalGithubOAuthID = null;
 import pkg from 'pg';
 const { Pool } = pkg;
 
+//ViteExpress.config({ mode: "production" })
 
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'postgres',
-  password: 'ABMARTIN',
+  database: 'chatapp',
+  password: 'password',
   port: 5432
 });
 
@@ -59,13 +60,19 @@ async function getHistoricalMessagesFromDatabase(room) {
     `;
     const result = await pool.query(query, [room]);
 
+    const historicalMessages = result.rows;
+
+    // Log the historicalMessages
+   // console.log('Historical Messages:', historicalMessages);
+
     // Return the result as JSON
-    return result.rows;
+    return historicalMessages;
   } catch (err) {
     console.error('Error retrieving historical messages from database:', err);
     throw err;
   }
 }
+
 
 async function insertMessageIntoDatabase(user, room, message, timestamp, socket) {
   try {
@@ -113,7 +120,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://66.189.31.92:3000",
     methods: ["GET", "POST"]
   }
 });
@@ -170,6 +177,10 @@ io.on('connection', (socket) => {
     console.log("request-historical-messages");
     try {
       const roomMessages = await getHistoricalMessagesFromDatabase(room);
+
+      // Log the roomMessages
+      //console.log('Historical Messages:', roomMessages);
+
       socket.emit('historical-messages', roomMessages);
     } catch (err) {
       console.error('Error handling request for historical messages:', err);
@@ -177,6 +188,7 @@ io.on('connection', (socket) => {
       // You may want to emit an error event to the client here
     }
   });
+
 
 
   socket.on('leave-room', (room) => {
@@ -269,12 +281,11 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/get-username', async (req, res) => {
-  let { userid } = globalGithubOAuthID;
+  const userid = req.query.userid;
 
-  console.log("Finding username of user with id " + globalGithubOAuthID);
+  console.log("Finding username of user with id " + userid);
 
   try {
-    userid=globalGithubOAuthID;
     const user = await getUserFromDatabase(userid);
     console.log("username " + user.username);
 
