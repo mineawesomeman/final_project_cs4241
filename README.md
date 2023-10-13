@@ -26,4 +26,4 @@ Group Members' Responsibilities
 
 Project Video
 
-You can view a demo of the project here.
+You can view a demo of the project at http://66.189.31.92:3000.
