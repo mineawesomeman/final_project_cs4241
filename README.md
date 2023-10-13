@@ -20,7 +20,7 @@ Challenges Faced
 One of the most challenging aspects was implementing real-time messaging while also fetching historical messages. This required a deep understanding of both frontend and backend technologies, as well as real-time communication protocols. Another challenge was managing state in React, especially when dealing with real-time updates.
 Group Members' Responsibilities
 
-    David:
+    David: Created the interactive map and hosted the server.
     Collin: 
     Addy: Implemented user authentication and backend logic
 
