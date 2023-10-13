@@ -13,12 +13,13 @@ let globalGithubOAuthID = null;
 import pkg from 'pg';
 const { Pool } = pkg;
 
+//ViteExpress.config({ mode: "production" })
 
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'postgres',
-  password: 'ABMARTIN',
+  database: 'chatapp',
+  password: 'password',
   port: 5432
 });
 
@@ -119,7 +120,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://66.189.31.92:3000",
     methods: ["GET", "POST"]
   }
 });

@@ -114,7 +114,7 @@ function Chat({ room }) {
                 }
 
                 if (!socketRef.current || !connected) {
-                    socketRef.current = io.connect('http://localhost:3001');
+                    socketRef.current = io.connect('http://66.189.31.92:3001');
                     setConnected(true);
                 }
 
