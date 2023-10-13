@@ -21,7 +21,7 @@ One of the most challenging aspects was implementing real-time messaging while a
 Group Members' Responsibilities
 
     David: Created the interactive map and hosted the server.
-    Collin: 
+    Colin: Created the chatroom and http server/websocket logic
     Addy: Implemented user authentication and backend logic
 
 Project Video https://youtu.be/xLmlKp6n8_o
