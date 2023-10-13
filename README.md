@@ -24,6 +24,6 @@ Group Members' Responsibilities
     Collin: 
     Addy: Implemented user authentication and backend logic
 
-Project Video
+Project Video https://youtu.be/xLmlKp6n8_o
 
 You can view a demo of the project at http://66.189.31.92:3000.
