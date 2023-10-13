@@ -13,7 +13,7 @@ let globalGithubOAuthID = null;
 import pkg from 'pg';
 const { Pool } = pkg;
 
-//ViteExpress.config({ mode: "production" })
+ViteExpress.config({ mode: "production" })
 
 const pool = new Pool({
   user: 'postgres',
