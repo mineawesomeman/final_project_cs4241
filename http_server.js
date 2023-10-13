@@ -281,12 +281,11 @@ app.get('/logout', (req, res) => {
 })
 
 app.get('/get-username', async (req, res) => {
-  let { userid } = globalGithubOAuthID;
+  const userid = req.query.userid;
 
-  console.log("Finding username of user with id " + globalGithubOAuthID);
+  console.log("Finding username of user with id " + userid);
 
   try {
-    userid=globalGithubOAuthID;
     const user = await getUserFromDatabase(userid);
     console.log("username " + user.username);
 
